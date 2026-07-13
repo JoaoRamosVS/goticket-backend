@@ -59,5 +59,28 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./localstack/init-s3.sh:/etc/localstack/init/ready.d/init-s3.sh"
       - "./mock-images:/seed-images:ro"
+  app:
+    build: .
+    container_name: goticket_app
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      localstack: { condition: service_started }
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/GoTicketDB
+      SPRING_DATASOURCE_USERNAME: goticket
+      SPRING_DATASOURCE_PASSWORD: goticket
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_CLOUD_AWS_ENDPOINT: http://localstack:4566
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      BUCKET_NAME: ${BUCKET_NAME:-goticket-dev}
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
 volumes:
   postgres_data:

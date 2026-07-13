@@ -1,8 +1,7 @@
 target/*
-!target/backendapi-*.jar
 .git
 .idea
-.mvn
+.claude
 k6
 docs
 *.md
