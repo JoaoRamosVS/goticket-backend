@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import tech.goticket.backendapi.idempotency.IdempotencyKey;
 import tech.goticket.backendapi.idempotency.IdempotencyKeyRepository;
 import tech.goticket.backendapi.shared.exception.ConflictException;
+import tech.goticket.backendapi.shared.exception.InvalidArgumentException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -31,7 +32,7 @@ public class IdempotencyService {
 
     public LookupResult checkAndRegister(String key, UUID userId, String endpoint, String bodyJson) {
         if(key == null || key.isBlank()) {
-            throw new ConflictException("Header Idempotency-Key obrigatório.");
+            throw new InvalidArgumentException("Header Idempotency-Key obrigatório.");
         }
         String hash = sha256(bodyJson);
 
