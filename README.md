@@ -5,6 +5,7 @@ Plataforma de venda de ingressos para eventos, com foco em **integridade e dispo
 > Projeto de Trabalho de Conclusão de Curso (TCC). O tema central é como impedir **overselling** e **cobrança duplicada** sob alta concorrência, e como manter o checkout **disponível** quando a demanda excede a capacidade — usando controle de concorrência no banco, idempotência e uma fila de admissão (backpressure).
 
 ---
+#### Link do repositório do frontend: https://github.com/RecheEduardo/goticket-frontend/
 
 ## Índice
 
