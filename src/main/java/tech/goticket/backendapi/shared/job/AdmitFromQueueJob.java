@@ -22,8 +22,7 @@ public class AdmitFromQueueJob {
     @Value("${goticket.waitingroom.admit-batch-size:100}")
     private int admitBatchSize;
 
-    // padrão -> @Scheduled(fixedDelay = 5_000, initialDelay = 5_000)
-    @Scheduled(fixedDelay = 5, initialDelay = 5, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 5_000, initialDelay = 5_000)
     public void admit() {
         Set<String> activeEvents = redis.opsForSet().members("waitingroom:active-events");
         if (activeEvents == null || activeEvents.isEmpty()) return;

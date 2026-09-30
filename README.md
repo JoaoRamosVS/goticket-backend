@@ -17,6 +17,7 @@ Plataforma de venda de ingressos para eventos, com foco em **integridade e dispo
 - [Migrations e dados iniciais](#migrations-e-dados-iniciais)
 - [Como funciona a fila de espera](#como-funciona-a-fila-de-espera)
 - [Simular alta demanda (reproduzir a fila)](#simular-alta-demanda-reproduzir-a-fila)
+- [Documentação da API (Scalar)](#documentação-da-api-scalar)
 - [Endpoints](#endpoints)
 - [Testes](#testes)
 - [Credenciais iniciais](#credenciais-iniciais)
@@ -26,7 +27,7 @@ Plataforma de venda de ingressos para eventos, com foco em **integridade e dispo
 
 ## O que o projeto resolve
 
-Quando um evento concorrido abre vendas, milhares de pessoas tentam comprar ao mesmo tempo. Sem os mecanismos certos, dois problemas surgem:
+Quando um evento concorrido abre vendas, milhares de pessoas tentam comprar ao mesmo tempo. Sem os mecanismos certos, três problemas surgem:
 
 1. **Overselling** — vender o mesmo assento duas vezes por corrida entre requisições.
 2. **Cobrança duplicada** — o cliente reenvia/retenta e gera dois pedidos.
@@ -52,6 +53,7 @@ O GoTicket ataca os três:
 | Pagamento | **Stripe** (modo teste) | PaymentIntent + webhooks |
 | Storage | **AWS S3** (LocalStack em dev) | Imagens de eventos e mapas de setor |
 | Auth | **JWT (RSA)** | Access + refresh token rotativo |
+| Documentação | **springdoc-openapi** + **Scalar** | Especificação OpenAPI 3 gerada do código + UI interativa |
 | Build | **Maven Wrapper** (`mvnw`) | Build/execução sem Maven global |
 | Testes de carga | **k6** | Overselling, idempotência e disponibilidade |
 | Infra local | **Docker Compose** | Postgres, Redis, LocalStack, Stripe CLI |
@@ -71,7 +73,7 @@ O GoTicket ataca os três:
 
 ## Como rodar
 
-O perfil ativo padrão é `dev,docker` — no boot, o **Flyway** migra o schema e o **dev-seed** popula os dados de demonstração automaticamente. A API sobe em **http://localhost:8080**.
+O perfil ativo padrão é `dev,docker` — no boot, o **Flyway** migra o schema e o **dev-seed** popula os dados de demonstração automaticamente. A API sobe em **http://localhost:8080** e a documentação interativa em **http://localhost:8080/scalar** (ver [Documentação da API](#documentação-da-api-scalar)).
 
 ### Opção A — Tudo no Docker (recomendado)
 
@@ -131,7 +133,7 @@ As configurações sensíveis ficam num arquivo `.env` (não versionado). Use o 
 
 - **Schema:** gerenciado por **Flyway** (`src/main/resources/db/migration`, `V1`…`V10`). As migrations rodam **automaticamente no boot** — não há passo manual. O JPA fica em `ddl-auto=validate` (valida o schema contra as entidades, não altera).
 - **Dados de referência:** roles, status e tipos de ingresso são semeados por migration (`V2`).
-- **Dados de demonstração (perfil `dev`):** `src/main/resources/db/dev-seed.sql` é carregado no boot (`spring.sql.init`) e popula venues, eventos, lotes e clientes fictícios — incluindo o evento **"Allianz Live Experience"**, configurado para acionar a fila de espera.
+- **Dados de demonstração (perfil `dev`):** `src/main/resources/db/dev-seed.sql` é carregado no boot (`spring.sql.init`) e popula um organizador de demonstração (`organizer@events.com`), venues, eventos e lotes — **não há clientes no seed** (cadastre via `POST /clients`) — incluindo o evento **"Allianz Live Experience"**, configurado para acionar a fila de espera.
 
 ---
 
@@ -190,9 +192,38 @@ docker exec goticket_redis redis-cli SREM waitingroom:active-events 21
 
 ---
 
+## Documentação da API (Scalar)
+
+A API é descrita em **OpenAPI 3**, gerada a partir do próprio código (springdoc-openapi), e publicada com o **Scalar**. Com a aplicação rodando:
+
+| Recurso | URL |
+|---|---|
+| Documentação interativa (Scalar) | http://localhost:8080/scalar |
+| Especificação OpenAPI (JSON) | http://localhost:8080/v3/api-docs |
+
+As duas rotas são públicas (não exigem token). A URL do JSON também pode ser importada no Postman ou no Insomnia.
+
+**O que está documentado:**
+- Todos os endpoints, agrupados por domínio, com resumo, parâmetros, headers e schemas de request/response. O webhook da Stripe fica oculto, porque só a Stripe o chama.
+- **Respostas de erro** no payload padrão (`ApiError`), com exemplos reais das mensagens. No checkout (`POST /orders`): `409` para estoque insuficiente (overselling), contenção na reserva e uso incompatível da `Idempotency-Key`; `403` para evento em alta demanda sem `X-Queue-Token`; `502` para falha na Stripe.
+- Rotas protegidas mostram `401`/`403`; rotas públicas aparecem sem exigência de autenticação.
+- Descrições e exemplos de preenchimento nos DTOs principais (`PlaceOrderRequest`, `CreateEventDTO`).
+
+**Testar requisições pelo Scalar:**
+1. Abra `POST /login` → **Test Request** e envie as credenciais (por exemplo, as do admin em [Credenciais iniciais](#credenciais-iniciais)).
+2. Copie o `accessToken` da resposta.
+3. No painel **Authentication** (`bearer-jwt`), cole o token em **Bearer Token**. As próximas requisições saem com `Authorization: Bearer <token>`.
+
+**Ao criar ou alterar endpoints** (configuração em `shared/config/OpenApiConfig.java` e nas propriedades `scalar.*` de `application.properties`):
+- Anote o controller com `@Tag` e cada método com `@Operation(summary = ...)`. Uma tag nova precisa entrar em `TAG_ORDER`, senão vai para o fim da lista.
+- Endpoints com `@PreAuthorize` ganham `401`/`403` automaticamente, e bodies com `@Valid` ganham `400`. Sem `@PreAuthorize`, a rota é documentada como pública.
+- Erros de domínio são declarados com `@ApiResponse` no método. Nesse caso, declare também a resposta de sucesso (`200`/`201`/`204`): com qualquer `@ApiResponse` explícito, o springdoc deixa de gerá-la sozinho.
+
+---
+
 ## Endpoints
 
-Visão geral por domínio (coleção completa e pré-montada no Postman — link ao final). Rotas protegidas exigem `Authorization: Bearer <token>` obtido em `/login`.
+Visão geral por domínio. A referência completa e interativa está no [Scalar](#documentação-da-api-scalar), e há também uma coleção pré-montada no Postman (link ao final). Rotas protegidas exigem `Authorization: Bearer <token>` obtido em `/login`.
 
 | Domínio | Rotas principais | Acesso |
 |---|---|---|
@@ -200,6 +231,7 @@ Visão geral por domínio (coleção completa e pré-montada no Postman — link
 | **Cadastro** | `POST /clients`, `POST /organizers` | Público |
 | **Eventos (leitura)** | `GET /events`, `GET /events/{id}`, `GET /event-categories` | Público |
 | **Eventos (gestão)** | `POST /events`, `PATCH /events/{id}`, `PUT /events/{id}/images`, `GET /events/mine`, `PATCH /events/{id}/status` | Organizer/Admin |
+| **Locais** | `GET /venues/{id}`, `GET /venues/{id}/sector-map` (públicos); `GET /venues`, `POST /venues`, `PATCH /venues/{id}`, `PUT /venues/{id}/sectors`, `PUT /venues/{id}/sector-map` | Organizer/Admin |
 | **Estrutura do evento** | `/events/{id}/sectors`, `/events/{id}/dates`, `.../date-sectors/{id}/batches` | Organizer/Admin |
 | **Fila de espera** | `POST /events/{id}/queue`, `GET /events/{id}/queue/position` | Client |
 | **Demanda** | `POST /events/{id}/demand-tier` (forçar HIGH/NORMAL) | Organizer/Admin |
@@ -240,7 +272,7 @@ cd k6
 ./run.sh A            # (ou B, C, E)
 ```
 
-Cada execução gera `k6/results/<cenário>.summary.json` (métricas) e `.verify.md` (invariantes via SQL: overselling, duplicatas, pedidos órfãos). A análise consolidada e os gráficos estão em `docs/`.
+Cada execução gera `k6/results/<cenário>.summary.json` (métricas) e `.verify.md` (invariantes via SQL: overselling, duplicatas, pedidos órfãos). Os gráficos consolidados (PNG e PDF) ficam em `k6/results/figuras/`.
 
 ---
 
