@@ -1,5 +1,7 @@
 package tech.goticket.backendapi.demand.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,12 +16,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/events/{eventId}/demand-tier")
 @RequiredArgsConstructor
+@Tag(name = "Demanda", description = "Controle do tier de demanda do evento (ativação manual da fila)")
 public class DemandController {
 
     private final DemandOverrideService demandOverrideService;
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Força manualmente o tier de demanda do evento (HIGH/NORMAL)")
     public ResponseEntity<Void> setTier(@PathVariable Long eventId,
                                         @Valid @RequestBody SetDemandTierRequest body,
                                         Authentication authentication) {

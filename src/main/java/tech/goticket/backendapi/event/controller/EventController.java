@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +32,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/events")
 @RequiredArgsConstructor
+@Tag(name = "Eventos", description = "Publicação, consulta e gestão de eventos")
 public class EventController {
 
     private final EventService eventService;
@@ -38,6 +41,7 @@ public class EventController {
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Cria um novo evento")
     public ResponseEntity<Void> createNewEvent(@Valid @RequestBody CreateEventDTO dto,
                                                Authentication authentication) {
 
@@ -51,6 +55,7 @@ public class EventController {
     }
 
     @GetMapping("/{eventId}")
+    @Operation(summary = "Detalha um evento (dados públicos)")
     public ResponseEntity<EventPageDTO> findEventById(@PathVariable Long eventId,
                                                       Authentication authentication) {
 
@@ -66,6 +71,7 @@ public class EventController {
 
     @GetMapping("/{eventId}/details")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Detalha um evento com estrutura completa (datas, setores, lotes)")
     public ResponseEntity<EventFullDTO> findEventDetailsById(@PathVariable Long eventId,
                                                       Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
@@ -76,6 +82,7 @@ public class EventController {
 
     @GetMapping("/mine")
     @PreAuthorize("hasAuthority('SCOPE_ORGANIZER')")
+    @Operation(summary = "Lista os eventos do organizador autenticado")
     public ResponseEntity<OrganizerEventListDTO> listMyEvents(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
@@ -90,6 +97,7 @@ public class EventController {
     }
 
     @GetMapping
+    @Operation(summary = "Lista eventos publicados (com filtros e paginação)")
     public ResponseEntity<EventMinListDTO> listApprovedPublicEvents(@RequestParam(name = "title", required = false) String title,
                                                                     @RequestParam(name = "categoryId", required = false) Long categoryId,
                                                                     @RequestParam(name = "startingPrice", required = false) Double startingPrice,
@@ -110,6 +118,7 @@ public class EventController {
 
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @Operation(summary = "Lista todos os eventos, inclusive não publicados — administração")
     public ResponseEntity<EventMinListDTO> listAllEvents(@RequestParam(name = "title", required = false) String title,
                                                          @RequestParam(name = "categoryId", required = false) Long categoryId,
                                                          @RequestParam(name = "statusId", required = false) Long statusId,
@@ -129,6 +138,7 @@ public class EventController {
 
     @PatchMapping(value = "/{eventId}", consumes = "application/merge-patch+json")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Atualiza campos do evento (merge-patch)")
     public ResponseEntity<EventFullDTO> updateEvent(@PathVariable Long eventId,
                                              @RequestBody JsonNode patchNode,
                                              Authentication authentication){
@@ -140,6 +150,7 @@ public class EventController {
 
     @PatchMapping("/{eventId}/visibility")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Altera a visibilidade do evento (público/privado)")
     public ResponseEntity<Void> updateEventVisibility(
             @PathVariable Long eventId,
             @RequestBody Map<String, EventVisibility.Values> payload,
@@ -159,6 +170,7 @@ public class EventController {
 
     @PatchMapping("/{eventId}/status")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @Operation(summary = "Altera o status do evento (aprovação/publicação) — administração")
     public ResponseEntity<Void> updateEventStatus(
             @PathVariable Long eventId,
             @RequestBody Map<String, EventStatus.Values> payload) {
@@ -176,6 +188,7 @@ public class EventController {
 
     @PutMapping(value = "/{eventId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Envia/atualiza as imagens do evento (multipart: metadata + newImages)")
     public ResponseEntity<Void> replaceEventImages(
             @PathVariable Long eventId,
             @RequestParam("metadata") String metadataJson,
@@ -203,6 +216,7 @@ public class EventController {
 
     @DeleteMapping("/{eventId}")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Remove um evento")
     public ResponseEntity<Long> deleteEventByID(@PathVariable(name = "eventId") Long eventId,
                                                  Authentication authentication){
         var userId = authentication.getName();
@@ -214,6 +228,7 @@ public class EventController {
 
     @DeleteMapping("/{eventId}/images/{imageKey}")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Remove uma imagem do evento")
     public ResponseEntity<String> deleteEventImageByKey(@PathVariable(name = "eventId") Long eventId,
                                                 @PathVariable(name = "imageKey") String imageKey,
                                                 Authentication authentication){

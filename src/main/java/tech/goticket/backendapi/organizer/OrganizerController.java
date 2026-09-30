@@ -2,6 +2,12 @@ package tech.goticket.backendapi.organizer;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -29,10 +35,12 @@ import java.util.UUID;
 
 import tech.goticket.backendapi.shared.utils.DocumentValidator;
 import tech.goticket.backendapi.user.token.AuthTokenService;
+import tech.goticket.backendapi.shared.config.ApiError;
 
 @RestController
 @RequestMapping(value = "/organizers")
 @RequiredArgsConstructor
+@Tag(name = "Organizadores", description = "Cadastro e gestão de organizadores de eventos")
 public class OrganizerController {
 
     private final UserService userService;
@@ -48,6 +56,22 @@ public class OrganizerController {
     private final AuthTokenService authTokenService;
 
     @PostMapping
+    @Operation(summary = "Cadastra um novo organizador e retorna os tokens de sessão")
+    @ApiResponse(responseCode = "201", description = "Organizador criado; retorna os tokens de sessão.")
+    @ApiResponse(responseCode = "400", description = "Body inválido ou CNPJ com dígitos verificadores inválidos.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class), examples =
+                    @ExampleObject(value = """
+                            {"timestamp": "24-09-2026 14:30:00", "code": 400, "status": "BAD_REQUEST",
+                             "errors": ["CNPJ informado é inválido."]}""")))
+    @ApiResponse(responseCode = "422", description = "E-mail ou CNPJ já cadastrado.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class), examples = {
+                    @ExampleObject(name = "E-mail duplicado", value = """
+                            {"timestamp": "24-09-2026 14:30:00", "code": 422, "status": "UNPROCESSABLE_ENTITY",
+                             "errors": ["Este e-mail já está cadastrado."]}"""),
+                    @ExampleObject(name = "CNPJ duplicado", value = """
+                            {"timestamp": "24-09-2026 14:30:00", "code": 422, "status": "UNPROCESSABLE_ENTITY",
+                             "errors": ["Este CNPJ já está cadastrado."]}""")
+            }))
     public ResponseEntity<LoginResponse> createNewOrganizer(@Valid @RequestBody CreateOrganizerDTO dto) {
         boolean isCNPJ = DocumentValidator.isCNPJ(dto.CNPJ());
         if (!isCNPJ) { throw new InvalidArgumentException("CNPJ informado é inválido."); }
@@ -81,6 +105,7 @@ public class OrganizerController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @Operation(summary = "Lista organizadores (paginado) — administração")
     public ResponseEntity<OrganizerListDTO> listOrganizers(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "pageSize", defaultValue = "10") int pageSize) {
@@ -92,6 +117,7 @@ public class OrganizerController {
 
     @GetMapping("/{organizerId}")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN') || authentication.name == #organizerId")
+    @Operation(summary = "Detalha um organizador pelo ID")
     public ResponseEntity<Organizer> getOrganizerById(@PathVariable String organizerId) {
         UUID uuid = UUID.fromString(organizerId);
         Organizer organizer = this.organizerService.findById(uuid).
@@ -102,6 +128,7 @@ public class OrganizerController {
 
     @PatchMapping("/{organizerId}")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN') || authentication.name == #organizerId")
+    @Operation(summary = "Atualiza os dados do organizador")
     public ResponseEntity<Organizer> updateOrganizer(@PathVariable String organizerId,
                                                      @RequestBody JsonNode patchNode) {
         UUID uuid = UUID.fromString(organizerId);

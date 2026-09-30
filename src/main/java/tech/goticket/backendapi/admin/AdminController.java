@@ -1,5 +1,7 @@
 package tech.goticket.backendapi.admin;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,12 +16,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping(value = "/admins")
 @RequiredArgsConstructor
+@Tag(name = "Administradores", description = "Consulta de administradores da plataforma")
 public class AdminController {
 
     private final AdminService adminService;
 
     @GetMapping("/{adminId}")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @Operation(summary = "Detalha um administrador pelo ID")
     public ResponseEntity<Admin> getAdminById(@PathVariable String adminId) {
         UUID uuid = UUID.fromString(adminId);
         Admin admin = this.adminService.findById(uuid)

@@ -1,5 +1,7 @@
 package tech.goticket.backendapi.event.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,12 +20,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/events/{eventId}/dates")
 @RequiredArgsConstructor
+@Tag(name = "Datas do evento", description = "Datas/sessões de um evento")
 public class EventDateController {
 
     private final EventDateService eventDateService;
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Adiciona uma data ao evento")
     public ResponseEntity<Void> createEventDate(@PathVariable Long eventId,
                                                 @Valid @RequestBody CreateEventDateDTO dto,
                                                 Authentication authentication) {
@@ -43,6 +47,7 @@ public class EventDateController {
 
     @PatchMapping("/{eventDateId}")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Atualiza uma data do evento")
     public ResponseEntity<EventDateDTO> updateEventDate(@PathVariable Long eventId,
                                                         @PathVariable Long eventDateId,
                                                         @Valid @RequestBody UpdateEventDateDTO dto,
@@ -62,6 +67,7 @@ public class EventDateController {
 
     @DeleteMapping("/{eventDateId}")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Remove uma data do evento")
     public ResponseEntity<Void> deleteEventDate(@PathVariable Long eventId,
                                                 @PathVariable Long eventDateId,
                                                 Authentication authentication) {

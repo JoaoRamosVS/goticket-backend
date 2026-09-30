@@ -1,6 +1,12 @@
 package tech.goticket.backendapi.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +32,7 @@ import tech.goticket.backendapi.shared.model.status.Status;
 import tech.goticket.backendapi.shared.model.status.StatusRepository;
 import tech.goticket.backendapi.user.UserService;
 import tech.goticket.backendapi.user.token.AuthTokenService;
+import tech.goticket.backendapi.shared.config.ApiError;
 
 import java.net.URI;
 import java.time.Instant;
@@ -35,6 +42,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(value = "/clients")
 @RequiredArgsConstructor
+@Tag(name = "Clientes", description = "Cadastro e gestão de clientes (compradores)")
 public class ClientController {
 
     private final UserService userService;
@@ -45,6 +53,22 @@ public class ClientController {
     private final AuthTokenService authTokenService;
 
     @PostMapping
+    @Operation(summary = "Cadastra um novo cliente e retorna os tokens de sessão")
+    @ApiResponse(responseCode = "201", description = "Cliente criado; retorna os tokens de sessão.")
+    @ApiResponse(responseCode = "400", description = "Body inválido ou CPF com dígitos verificadores inválidos.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class), examples =
+                    @ExampleObject(value = """
+                            {"timestamp": "24-09-2026 14:30:00", "code": 400, "status": "BAD_REQUEST",
+                             "errors": ["CPF informado é inválido."]}""")))
+    @ApiResponse(responseCode = "422", description = "E-mail ou CPF já cadastrado.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class), examples = {
+                    @ExampleObject(name = "E-mail duplicado", value = """
+                            {"timestamp": "24-09-2026 14:30:00", "code": 422, "status": "UNPROCESSABLE_ENTITY",
+                             "errors": ["Este e-mail já está cadastrado."]}"""),
+                    @ExampleObject(name = "CPF duplicado", value = """
+                            {"timestamp": "24-09-2026 14:30:00", "code": 422, "status": "UNPROCESSABLE_ENTITY",
+                             "errors": ["Este CPF já está cadastrado."]}""")
+            }))
     public ResponseEntity<LoginResponse> createNewClient(@Valid @RequestBody CreateClientDTO dto) {
 
         boolean isCpf = DocumentValidator.isCPF(dto.identityDocument());
@@ -81,6 +105,7 @@ public class ClientController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    @Operation(summary = "Lista clientes (paginado) — administração")
     public ResponseEntity<ClientListDTO> listClients(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "pageSize", defaultValue = "10") int pageSize) {
@@ -92,6 +117,7 @@ public class ClientController {
 
     @GetMapping("/me")
     @PreAuthorize("hasAuthority('SCOPE_CLIENT')")
+    @Operation(summary = "Retorna o perfil do cliente autenticado")
     public ResponseEntity<ClientProfileDTO> getMyProfile(Authentication authentication) {
         return ResponseEntity.ok(
                 clientService.getProfile(UUID.fromString(authentication.getName()))
@@ -100,6 +126,7 @@ public class ClientController {
 
     @GetMapping("/{clientId}")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN') || authentication.name == #clientId")
+    @Operation(summary = "Detalha um cliente pelo ID")
     public ResponseEntity<Client> getClientById(@PathVariable String clientId) {
         UUID uuid = UUID.fromString(clientId);
         Client client = this.clientService.findById(uuid).
@@ -110,6 +137,7 @@ public class ClientController {
 
     @PatchMapping("/{clientId}")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN') || authentication.name == #clientId")
+    @Operation(summary = "Atualiza os dados do cliente")
     public ResponseEntity<Client> updateClient(@PathVariable String clientId,
                                                @RequestBody JsonNode patchNode,
                                                Authentication authentication) {
@@ -123,6 +151,7 @@ public class ClientController {
 
     @PatchMapping("/{clientId}/password")
     @PreAuthorize("authentication.name == #clientId")
+    @Operation(summary = "Altera a senha do cliente")
     public ResponseEntity<Void> updatePassword(@PathVariable String clientId,
                                                @Valid @RequestBody UpdatePasswordDTO dto) {
         clientService.updatePassword(UUID.fromString(clientId), dto);

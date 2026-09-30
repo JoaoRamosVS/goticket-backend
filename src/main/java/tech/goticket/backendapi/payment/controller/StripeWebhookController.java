@@ -3,6 +3,7 @@ package tech.goticket.backendapi.payment.controller;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.net.Webhook;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ import tech.goticket.backendapi.payment.service.StripeWebhookService;
 
 @RestController
 @RequiredArgsConstructor
+@Hidden
 public class StripeWebhookController {
     private static final Logger log = LoggerFactory.getLogger(StripeWebhookController.class);
 

@@ -1,6 +1,9 @@
 package tech.goticket.backendapi.venue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +29,7 @@ import tech.goticket.backendapi.venue.dto.UpsertVenueSectorsPayloadDTO;
 import tech.goticket.backendapi.venue.dto.VenueDetailDTO;
 import tech.goticket.backendapi.venue.dto.VenueListDTO;
 import tech.goticket.backendapi.venue.dto.VenueSectorDTO;
+import tech.goticket.backendapi.shared.config.OpenApiConfig;
 
 import java.net.URI;
 import java.time.Instant;
@@ -35,6 +39,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/venues")
 @RequiredArgsConstructor
+@Tag(name = "Locais", description = "Locais (venues) e seus setores")
 public class VenueController {
 
     private final OrganizerService organizerService;
@@ -47,6 +52,7 @@ public class VenueController {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Lista locais (paginado)")
     public ResponseEntity<VenueListDTO> listVenues(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "pageSize", defaultValue = "10") int pageSize) {
@@ -57,6 +63,7 @@ public class VenueController {
     }
 
     @GetMapping("/{venueId}")
+    @Operation(summary = "Detalha um local pelo ID")
     public ResponseEntity<VenueDetailDTO> findVenueById(@PathVariable Long venueId) {
         Venue venue = venueService.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Espaço não encontrado."));
@@ -65,6 +72,7 @@ public class VenueController {
     }
 
     @GetMapping(value = "/{venueId}/sector-map", produces = "image/svg+xml")
+    @Operation(summary = "Retorna o mapa de setores do local (SVG)")
     public ResponseEntity<String> getVenueSectorMap(@PathVariable Long venueId) {
         Venue venue = venueService.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Espaço não encontrado."));
@@ -79,6 +87,7 @@ public class VenueController {
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Cadastra um novo local")
     public ResponseEntity<VenueDetailDTO> createNewVenue(@Valid @RequestBody CreateVenueDTO dto, Authentication authentication) {
         boolean isCNPJ = DocumentValidator.isCNPJ(dto.CNPJ());
         if(!isCNPJ) { throw new InvalidArgumentException("CNPJ informado é inválido."); }
@@ -134,6 +143,7 @@ public class VenueController {
 
     @PatchMapping(value = "/{venueId}", consumes = "application/merge-patch+json")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Atualiza os dados do local (merge-patch)")
     public ResponseEntity<VenueDetailDTO> updateVenue(@PathVariable Long venueId,
                                                       @RequestBody JsonNode patchNode,
                                                       Authentication authentication) {
@@ -144,6 +154,10 @@ public class VenueController {
     }
 
     @GetMapping("/{venueId}/sectors")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Lista os setores do local")
+    @ApiResponse(responseCode = "200", description = "Setores do local.")
+    @ApiResponse(responseCode = "404", ref = OpenApiConfig.NOT_FOUND)
     public ResponseEntity<List<VenueSectorDTO>> listVenueSectors(@PathVariable Long venueId) {
         venueService.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Espaço não encontrado."));
@@ -157,6 +171,7 @@ public class VenueController {
 
     @PutMapping("/{venueId}/sectors")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Substitui os setores do local")
     public ResponseEntity<List<VenueSectorDTO>> replaceVenueSectors(@PathVariable Long venueId,
                                                                     @Valid @RequestBody UpsertVenueSectorsPayloadDTO payload,
                                                                     Authentication authentication) {
@@ -170,6 +185,7 @@ public class VenueController {
 
     @PutMapping(value = "/{venueId}/sector-map", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Envia o mapa de setores do local (SVG, multipart)")
     public ResponseEntity<VenueDetailDTO> uploadSectorMap(@PathVariable Long venueId,
                                                           @RequestParam("mapFile") MultipartFile mapFile,
                                                           Authentication authentication) {
@@ -193,6 +209,7 @@ public class VenueController {
 
     @DeleteMapping("/{venueId}")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Remove um local")
     public ResponseEntity<Long> deleteVenueById(@PathVariable Long venueId,
                                                 Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());

@@ -1,5 +1,7 @@
 package tech.goticket.backendapi.ticket.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,11 +19,13 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/tickets")
 @RequiredArgsConstructor
+@Tag(name = "Ingressos", description = "Consulta dos ingressos do cliente")
 public class TicketController {
     private final TicketService ticketService;
 
     @GetMapping("/{ticketId}")
     @PreAuthorize("hasAnyAuthority('SCOPE_CLIENT', 'SCOPE_ADMIN')")
+    @Operation(summary = "Detalha um ingresso pelo ID")
     public ResponseEntity<TicketResponse> getById(@PathVariable UUID ticketId,
                                                   Authentication authentication) {
         UUID requesterId = UUID.fromString(authentication.getName());
@@ -30,6 +34,7 @@ public class TicketController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('SCOPE_CLIENT')")
+    @Operation(summary = "Lista os ingressos do cliente autenticado")
     public ResponseEntity<List<TicketResponse>> getMine(Authentication authentication) {
         UUID buyerId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(ticketService.findMyTickets(buyerId));

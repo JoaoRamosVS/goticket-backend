@@ -1,5 +1,7 @@
 package tech.goticket.backendapi.event.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,12 +20,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/events/{eventId}/sectors")
 @RequiredArgsConstructor
+@Tag(name = "Setores do evento", description = "Setores de um evento (montagem da estrutura)")
 public class EventSectorController {
 
     private final EventSectorService eventSectorService;
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Adiciona um setor ao evento")
     public ResponseEntity<EventSectorDTO> createEventSector(@PathVariable Long eventId,
                                                             @Valid @RequestBody CreateEventSectorDTO dto,
                                                             Authentication authentication) {
@@ -45,6 +49,7 @@ public class EventSectorController {
 
     @PatchMapping("/{sectorId}")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Atualiza um setor do evento")
     public ResponseEntity<EventSectorDTO> updateEventSector(@PathVariable Long eventId,
                                                             @PathVariable Long sectorId,
                                                             @RequestBody UpdateEventSectorDTO dto,
@@ -65,6 +70,7 @@ public class EventSectorController {
 
     @DeleteMapping("/{sectorId}")
     @PreAuthorize("hasAnyAuthority('SCOPE_ADMIN', 'SCOPE_ORGANIZER')")
+    @Operation(summary = "Remove um setor do evento")
     public ResponseEntity<Void> deleteEventSector(@PathVariable Long eventId,
                                                   @PathVariable Long sectorId,
                                                   Authentication authentication) {
