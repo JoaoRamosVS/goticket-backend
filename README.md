@@ -200,8 +200,15 @@ A API é descrita em **OpenAPI 3**, gerada a partir do próprio código (springd
 |---|---|
 | Documentação interativa (Scalar) | http://localhost:8080/scalar |
 | Especificação OpenAPI (JSON) | http://localhost:8080/v3/api-docs |
+| Versão publicada (somente leitura, sem rodar o projeto) | https://joaoramosvs.github.io/goticket-backend/ |
 
-As duas rotas são públicas (não exigem token). A URL do JSON também pode ser importada no Postman ou no Insomnia.
+As rotas locais são públicas (não exigem token). A URL do JSON também pode ser importada no Postman ou no Insomnia.
+
+A versão publicada é servida pelo GitHub Pages a partir de `docs/` (`index.html` com o Scalar + `openapi.json`). Ela não executa requisições: o CORS da API só libera o front local. Ao alterar a API, reexporte a especificação com a aplicação rodando e faça commit do arquivo:
+
+```bash
+curl -s http://localhost:8080/v3/api-docs -o docs/openapi.json
+```
 
 **O que está documentado:**
 - Todos os endpoints, agrupados por domínio, com resumo, parâmetros, headers e schemas de request/response. O webhook da Stripe fica oculto, porque só a Stripe o chama.
@@ -223,7 +230,7 @@ As duas rotas são públicas (não exigem token). A URL do JSON também pode ser
 
 ## Endpoints
 
-Visão geral por domínio. A referência completa e interativa está no [Scalar](#documentação-da-api-scalar), e há também uma coleção pré-montada no Postman (link ao final). Rotas protegidas exigem `Authorization: Bearer <token>` obtido em `/login`.
+Visão geral por domínio. A referência completa e interativa está no [Scalar](#documentação-da-api-scalar). Rotas protegidas exigem `Authorization: Bearer <token>` obtido em `/login`.
 
 | Domínio | Rotas principais | Acesso |
 |---|---|---|
@@ -243,8 +250,6 @@ Notas de contrato:
 - Requisições `PATCH` usam `Content-Type: application/merge-patch+json`.
 - `POST /orders` exige os headers `Idempotency-Key` e (em evento HIGH) `X-Queue-Token`.
 - Erros seguem um payload padrão: `{ timestamp, code, status, errors: [...] }`.
-
-**Coleção do Postman:** https://app.getpostman.com/join-team?invite_code=f8844a6a152d27d63065c140f59a9f8fe4969b2340405072e22d98bf59f49762&target_code=9ed7f0c37437cb80c5b860aa5467d861
 
 ---
 

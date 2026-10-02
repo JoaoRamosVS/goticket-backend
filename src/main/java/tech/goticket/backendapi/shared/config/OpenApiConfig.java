@@ -11,6 +11,7 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.customizers.OpenApiCustomizer;
@@ -95,6 +96,8 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info().title("GoTicket API").version("v1")
                         .description("Venda de ingressos com fila de espera e controle de concorrência"))
+                .servers(List.of(new Server().url("http://localhost:8080")
+                        .description("Ambiente local (docker compose up -d --build)")))
                 .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
                 .components(components);
     }

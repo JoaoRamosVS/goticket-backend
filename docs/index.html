@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GoTicket API</title>
+  <meta name="description" content="Documentação da API do GoTicket: venda de ingressos com fila de espera e controle de concorrência." />
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1"></script>
+  <script>
+    Scalar.createApiReference('#app', {
+      url: './openapi.json',
+      theme: 'bluePlanet',
+      layout: 'modern',
+      darkMode: true,
+      // Somente leitura: o CORS da API só libera o front local, então requisições a partir do github.io falhariam
+      hideTestRequestButton: true
+    })
+  </script>
+</body>
+</html>
